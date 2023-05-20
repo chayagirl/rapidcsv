@@ -1,8 +1,8 @@
 /*
- * rapidcsv.h
+ * rapidcsv.h (modified by chayagirl!)
  *
- * URL:      https://github.com/d99kris/rapidcsv
- * Version:  8.77
+ * URL:      https://github.com/chayagirl/rapidcsv
+ * Version:  8.76
  *
  * Copyright (C) 2017-2023 Kristofer Berggren
  * All rights reserved.
@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <ostream>
 #ifdef HAS_CODECVT
 #include <codecvt>
 #include <locale>
@@ -1317,42 +1318,6 @@ namespace rapidcsv
     }
 
     /**
-     * @brief   Set cell by column index and row name.
-     * @param   pColumnIdx            zero-based column index.
-     * @param   pRowName              row label name.
-     * @param   pCell                 cell data.
-     */
-    template<typename T>
-    void SetCell(const size_t pColumnIdx, const std::string& pRowName, const T& pCell)
-    {
-      const int rowIdx = GetRowIdx(pRowName);
-      if (rowIdx < 0)
-      {
-        throw std::out_of_range("row not found: " + pRowName);
-      }
-
-      SetCell<T>(pColumnIdx, static_cast<size_t>(rowIdx), pCell);
-    }
-
-    /**
-     * @brief   Set cell by column name and row index.
-     * @param   pColumnName           column label name.
-     * @param   pRowIdx               zero-based row index.
-     * @param   pCell                 cell data.
-     */
-    template<typename T>
-    void SetCell(const std::string& pColumnName, const size_t pRowIdx, const T& pCell)
-    {
-      const int columnIdx = GetColumnIdx(pColumnName);
-      if (columnIdx < 0)
-      {
-        throw std::out_of_range("column not found: " + pColumnName);
-      }
-
-      SetCell<T>(static_cast<size_t>(columnIdx), pRowIdx, pCell);
-    }
-    
-    /**
      * @brief   Get column name
      * @param   pColumnIdx            zero-based column index.
      * @returns column name.
@@ -1559,6 +1524,7 @@ namespace rapidcsv
 
     void ParseCsv(std::istream& pStream, std::streamsize p_FileLength)
     {
+      int orig_FileLength = (int) p_FileLength;
       const std::streamsize bufLength = 64 * 1024;
       std::vector<char> buffer(bufLength);
       std::vector<std::string> row;
@@ -1628,21 +1594,24 @@ namespace rapidcsv
               }
               else
               {
-                row.push_back(Unquote(Trim(cell)));
 
-                if (mLineReaderParams.mSkipCommentLines && !row.at(0).empty() &&
-                    (row.at(0)[0] == mLineReaderParams.mCommentPrefix))
-                {
-                  // skip comment line
-                }
-                else
-                {
-                  mData.push_back(row);
-                }
+                  row.push_back(Unquote(Trim(cell)));
 
-                cell.clear();
-                row.clear();
-                quoted = false;
+                  if (mLineReaderParams.mSkipCommentLines && !row.at(0).empty() &&
+                      (row.at(0)[0] == mLineReaderParams.mCommentPrefix))
+                  {
+                    // skip comment line
+                  }
+                  else
+                  {
+                    mData.push_back(row);
+                  }
+
+                  cell.clear();
+                  row.clear();
+                  quoted = false;
+                
+                
               }
             }
           }
@@ -1650,10 +1619,16 @@ namespace rapidcsv
           {
             cell += buffer[i];
           }
+          
         }
+        std::cout << "reading " << orig_FileLength - p_FileLength << " cells..." << "\r" << std::flush;
+        
         p_FileLength -= readLength;
       }
-
+      if(orig_FileLength - p_FileLength > 7) {
+      std::cout << std::endl;
+      }
+      
       // Handle last line without linebreak
       if (!cell.empty() || !row.empty())
       {
